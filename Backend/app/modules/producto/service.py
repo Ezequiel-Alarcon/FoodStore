@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from typing import cast
 
-from app.modules.producto.models import Producto
+from app.modules.producto.models import Producto, ProductoCategoria, ProductoIngrediente
 from app.modules.producto.schemas import (
     CategoriaBasicRead,
     IngredienteBasicRead,
@@ -26,14 +26,13 @@ class ProductoService:
             )
         return producto
     
-    def _validar_nombre_unico(self, name: str) -> None:
-        with self._uow as uow:
-            producto = uow.productos.get_by_name(name)
-            if producto:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"El nombre '{name}' ya está en uso por otro producto"
-                )
+    def _validar_nombre_unico(self, uow: ProductoUnitOfWork, name: str) -> None:
+        producto = uow.productos.get_by_name(name)
+        if producto:
+            raise HTTPException(
+                status_code=400,
+                detail=f"El nombre '{name}' ya está en uso por otro producto"
+            )
 
     def _to_read_full(self, uow: ProductoUnitOfWork, producto: Producto) -> ProductoReadFull:
         categoria_links = uow.producto_categorias.list_by_producto(cast(int, producto.id))
@@ -75,10 +74,40 @@ class ProductoService:
     # ── Métodos públicos ───────────────────────────────────────────────────
 
     def create(self, data: ProductoCreate) -> ProductoReadFull:
-        self._validar_nombre_unico(data.nombre)
-        nuevo_producto = Producto.model_validate(data)
         with self._uow as uow:
+            self._validar_nombre_unico(uow, data.nombre)
+            
+            # Excluimos las relaciones porque no van en la tabla "productos" directamente
+            data_dict = data.model_dump(exclude={"categoria_ids", "ingrediente_ids"})
+            nuevo_producto = Producto(**data_dict)
             uow.productos.create(nuevo_producto)
+            
+            # 1. Asignar categorías (la primera será la principal)
+            for i, cat_id in enumerate(data.categoria_ids):
+                cat = uow.categorias.get_by_id(cat_id)
+                if not cat:
+                    raise HTTPException(status_code=404, detail=f"Categoría con ID {cat_id} no encontrada")
+                
+                link = ProductoCategoria(
+                    producto_id=cast(int, nuevo_producto.id),
+                    categoria_id=cat_id,
+                    es_principal=(i == 0) # La posición 0 es la principal
+                )
+                uow.producto_categorias.create(link)
+                
+            # 2. Asignar ingredientes si vinieron
+            if data.ingrediente_ids:
+                for ing_id in data.ingrediente_ids:
+                    ing = uow.ingredientes.get_by_id(ing_id)
+                    if not ing:
+                        raise HTTPException(status_code=404, detail=f"Ingrediente con ID {ing_id} no encontrado")
+                    
+                    link_ing = ProductoIngrediente(
+                        producto_id=cast(int, nuevo_producto.id),
+                        ingrediente_id=ing_id
+                    )
+                    uow.producto_ingredientes.create(link_ing)
+                    
             return self._to_read_full(uow, nuevo_producto)
 
     def get_all(self, offset: int = 0, limit: int = 20):
@@ -116,7 +145,7 @@ class ProductoService:
     def update(self, producto_id: int, data: ProductoUpdate) -> ProductoReadFull:
         with self._uow as uow:
             producto = self._get_or_404(uow, producto_id)
-            patch = data.model_dump(exclude_unset=True)
+            patch = data.model_dump(exclude_unset=True, exclude={"categoria_ids", "ingrediente_ids"})
 
             if "nombre" in patch and patch["nombre"] != producto.nombre:
                 existente = uow.productos.get_by_name(patch["nombre"])
@@ -128,6 +157,41 @@ class ProductoService:
 
             for field, value in patch.items():
                 setattr(producto, field, value)
+                
+            # Si se enviaron categorías para actualizar
+            if data.categoria_ids is not None:
+                # Limpiar las viejas
+                viejas_cats = uow.producto_categorias.list_by_producto(producto_id)
+                for vc in viejas_cats:
+                    uow.producto_categorias.delete(vc)
+                # Crear las nuevas
+                for i, cat_id in enumerate(data.categoria_ids):
+                    cat = uow.categorias.get_by_id(cat_id)
+                    if not cat:
+                        raise HTTPException(status_code=404, detail=f"Categoría con ID {cat_id} no encontrada")
+                    link = ProductoCategoria(
+                        producto_id=producto_id,
+                        categoria_id=cat_id,
+                        es_principal=(i == 0)
+                    )
+                    uow.producto_categorias.create(link)
+                    
+            # Si se enviaron ingredientes para actualizar
+            if data.ingrediente_ids is not None:
+                # Limpiar los viejos
+                viejos_ings = uow.producto_ingredientes.list_by_producto(producto_id)
+                for vi in viejos_ings:
+                    uow.producto_ingredientes.delete(vi)
+                # Crear los nuevos
+                for ing_id in data.ingrediente_ids:
+                    ing = uow.ingredientes.get_by_id(ing_id)
+                    if not ing:
+                        raise HTTPException(status_code=404, detail=f"Ingrediente con ID {ing_id} no encontrado")
+                    link_ing = ProductoIngrediente(
+                        producto_id=producto_id,
+                        ingrediente_id=ing_id
+                    )
+                    uow.producto_ingredientes.create(link_ing)
 
             uow.productos.update(producto)
             return self._to_read_full(uow, producto)

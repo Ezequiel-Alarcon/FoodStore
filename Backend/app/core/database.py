@@ -14,7 +14,7 @@ engine = create_engine(
 def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
 
-#crea una nueva sesion por request, con expire_on_commit=False para evitar que 
-# los objetos se vuelvan obsoletos después de un commit
-def session_factory() -> Session:
-    return Session(engine, expire_on_commit=False)
+
+def get_session():
+    with Session(engine) as session:
+        yield session

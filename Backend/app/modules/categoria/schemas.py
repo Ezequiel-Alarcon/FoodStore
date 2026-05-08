@@ -26,11 +26,12 @@ class CategoriaCreate(CategoriaBase):
 class CategoriaUpdate(SQLModel):
     parent_id: Optional[int] = None
     nombre: Optional[str] = Field(
-        default=None, unique=True, description="Nombre de la categoría", max_length=100)
+        default=None, description="Nombre de la categoría", max_length=100)
     descripcion: Optional[str] = Field(
         default=None, description="Descripción de la categoría")
     imagen_url: Optional[str] = Field(
         default=None, description="URL de imagen de la categoría")
+
 
 # ─── Response schemas ────────────────────────────────────────────────────────────────────
 
@@ -44,17 +45,18 @@ class CategoriaReadSimple(CategoriaRead):
     pass
 
 
+class CategoriaReadFull(CategoriaRead):
+    productos: list[ProductoBasicRead] = Field(
+        default_factory=list, description="Lista de productos")
+
+
+#Se puede borrar? Revisar a lo ultimo
 class CategoriaReadWithSubs(CategoriaRead):
     """Categoría con subcategorías - para árbol"""
     subcategorias: list[CategoriaReadSimple] = Field(
         default_factory=list,
         description="Subcategorías hijo"
     )
-
-
-class CategoriaReadFull(CategoriaRead):
-    productos: list[ProductoBasicRead] = Field(
-        default_factory=list, description="Lista de productos")
 
 
 class CategoriaTreeNode(CategoriaRead):

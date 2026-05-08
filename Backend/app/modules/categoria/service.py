@@ -28,14 +28,13 @@ class CategoriaService:
             )
         return categoria
 
-    def _validar_nombre_unico(self, name: str) -> None:
-        with self._uow as uow:
-            categoria = uow.categorias.get_by_name(name, include_deleted=True)
-            if categoria:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"El nombre '{name}' ya está en uso por otra categoría"
-                )
+    def _validar_nombre_unico(self, uow: CategoriaUnitOfWork, name: str) -> None:
+        categoria = uow.categorias.get_by_name(name, include_deleted=True)
+        if categoria:
+            raise HTTPException(
+                status_code=400,
+                detail=f"El nombre '{name}' ya está en uso por otra categoría"
+            )
 
     def _validar_jerarquia_padre(
         self,
@@ -91,16 +90,15 @@ class CategoriaService:
     # ── Métodos públicos ───────────────────────────────────────────────────
 
     def create(self, data: CategoriaCreate) -> CategoriaRead:
-        # Validar que el nombre sea único
-        self._validar_nombre_unico(data.nombre)
-        
-        # Si se especifica un parent_id, validar que exista la categoría padre
-        if data.parent_id is not None:
-            with self._uow as uow:
-                self._get_or_404(uow, data.parent_id)
-
-        nueva_categoria = Categoria.model_validate(data)
         with self._uow as uow:
+            # Validar que el nombre sea único
+            self._validar_nombre_unico(uow, data.nombre)
+            
+            # Si se especifica un parent_id, validar que exista la categoría padre
+            if data.parent_id is not None:
+                self._get_or_404(uow, data.parent_id)
+    
+            nueva_categoria = Categoria.model_validate(data)
             uow.categorias.create(nueva_categoria)
             return CategoriaRead.model_validate(nueva_categoria)
 
@@ -186,6 +184,12 @@ class CategoriaService:
             uow.categorias.update(categoria)
             return self._to_read_full(categoria)
 
+    '''
+    Si se borra un padre que tiene hijos, 
+    los hijos quedan como principales o se borran? 
+    Por ahora quedan como principales, no se borran.
+    Revisar si es lo mejor.
+    '''
     def delete(self, categoria_id: int) -> None:
         with self._uow as uow:
             categoria = self._get_or_404(uow, categoria_id)

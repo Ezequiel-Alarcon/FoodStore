@@ -1,7 +1,8 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, status
-from app.core.database import session_factory
+from sqlmodel import Session
+from app.core.database import get_session
 from app.modules.categoria.schemas import (
     CategoriaCreate,
     CategoriaList,
@@ -17,9 +18,9 @@ router = APIRouter()
 
 
 # ── Factory: inyecta el Service con la Session ───────────────────────────────
-def get_categoria_service() -> CategoriaService:
-    """Inyecta el servicio con su Session."""
-    return CategoriaService(CategoriaUnitOfWork(session_factory))
+def get_categoria_service(session: Session = Depends(get_session)) -> CategoriaService:
+    """Inyecta el servicio con su UoW provisto de la Session."""
+    return CategoriaService(CategoriaUnitOfWork(session))
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────

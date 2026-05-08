@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Optional
-from ..model_base.base_model import BaseModel
+from ..base.models import BaseModel
 from sqlmodel import Field, Relationship, Column, Integer, ForeignKey, SQLModel, ARRAY, String
 
 
@@ -10,13 +10,15 @@ if TYPE_CHECKING:
 
 
 class ProductoCategoria(SQLModel, table=True):
+    __tablename__ = "producto_categoria"
+    
     # La combinación de producto_id y categoria_id para evitar duplicados de relacion
     producto_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("producto.id", ondelete="CASCADE"),  #borra relaciones si se borra el producto
+        sa_column=Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"),  #borra relaciones si se borra el producto
         primary_key=True, nullable=False)
     )
     categoria_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("categoria.id", ondelete="RESTRICT"), #no permite borrar categoria si tiene productos relacionados
+        sa_column=Column(Integer, ForeignKey("categorias.id", ondelete="RESTRICT"), #no permite borrar categoria si tiene productos relacionados
         primary_key=True, nullable=False)
     )
     es_principal: bool = Field(default=False, description="Indica si es categoría principal del producto")
@@ -26,12 +28,14 @@ class ProductoCategoria(SQLModel, table=True):
     )
 
 class ProductoIngrediente(SQLModel, table=True):
+    __tablename__ = "producto_ingrediente"
+    
     producto_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("producto.id", ondelete="CASCADE"), 
+        sa_column=Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), 
         primary_key=True, nullable=False)
     )
     ingrediente_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("ingrediente.id", ondelete="RESTRICT"), 
+        sa_column=Column(Integer, ForeignKey("ingredientes.id", ondelete="RESTRICT"), 
         primary_key=True, nullable=False)
     )
     es_removible: bool = Field(default=False, description="Indica si el ingrediente es removible")
@@ -41,6 +45,8 @@ class ProductoIngrediente(SQLModel, table=True):
     )
 
 class Producto(BaseModel, table=True):
+    __tablename__ = "productos"
+
     #no puede ser nulo
     nombre: str = Field(..., description="Nombre del producto", max_length=150)
     descripcion: Optional[str] = Field(default=None, description="Descripción del producto")

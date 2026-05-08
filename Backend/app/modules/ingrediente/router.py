@@ -1,7 +1,8 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, status
-from app.core.database import session_factory
+from sqlmodel import Session
+from app.core.database import get_session
 from app.modules.ingrediente.schemas import (
     IngredienteCreate,
     IngredienteList,
@@ -15,8 +16,8 @@ from app.modules.ingrediente.service import IngredienteService
 router = APIRouter()
 
 # ── Factory: inyecta el Service con la Session ──────────────────────────
-def get_ingrediente_service() -> IngredienteService:
-    return IngredienteService(IngredienteUnitOfWork(session_factory))
+def get_ingrediente_service(session: Session = Depends(get_session)) -> IngredienteService:
+    return IngredienteService(IngredienteUnitOfWork(session))
 
 # ── Endpoints ───────────────────────────────────────────────────────────
 @router.post(

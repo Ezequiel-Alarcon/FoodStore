@@ -26,14 +26,13 @@ class IngredienteService:
             )
         return ingrediente
 
-    def _validar_nombre_unico(self, name: str) -> None:
-        with self._uow as uow:
-            ingrediente = uow.ingredientes.get_by_name(name, include_deleted=True)
-            if ingrediente:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"El nombre '{name}' ya está en uso por otro ingrediente"
-                )
+    def _validar_nombre_unico(self, uow: IngredienteUnitOfWork, name: str) -> None:
+        ingrediente = uow.ingredientes.get_by_name(name, include_deleted=True)
+        if ingrediente:
+            raise HTTPException(
+                status_code=400,
+                detail=f"El nombre '{name}' ya está en uso por otro ingrediente"
+            )
 
     # ── Métodos públicos ───────────────────────────────────────────────────
 
@@ -52,9 +51,9 @@ class IngredienteService:
         )
 
     def create(self, data: IngredienteCreate) -> IngredienteRead:
-        self._validar_nombre_unico(data.nombre)
-        nuevo_ingrediente = Ingrediente.model_validate(data)
         with self._uow as uow:
+            self._validar_nombre_unico(uow, data.nombre)
+            nuevo_ingrediente = Ingrediente.model_validate(data)
             uow.ingredientes.create(nuevo_ingrediente)
             return IngredienteRead.model_validate(nuevo_ingrediente)
 

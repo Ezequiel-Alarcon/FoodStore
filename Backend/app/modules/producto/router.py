@@ -1,7 +1,8 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, status
-from app.core.database import session_factory
+from sqlmodel import Session
+from app.core.database import get_session
 from app.modules.producto.schemas import (
     ProductoCreate,
     ProductoList,
@@ -14,8 +15,8 @@ from app.modules.producto.service import ProductoService
 router = APIRouter()
 
 # ── Factory: inyecta el Service con la Session ───────────────────────────────
-def get_producto_service() -> ProductoService:
-    return ProductoService(ProductoUnitOfWork(session_factory))
+def get_producto_service(session: Session = Depends(get_session)) -> ProductoService:
+    return ProductoService(ProductoUnitOfWork(session))
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 @router.post(

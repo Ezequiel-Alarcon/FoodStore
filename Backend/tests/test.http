@@ -124,7 +124,7 @@ Content-Type: application/json
 ### Crear, listar, obtener, actualizar
 ### ==========================================
 
-### 3.1 Crear Producto 1
+### 3.1 Crear Producto 1 (con categorias e ingredientes)
 POST {{baseUrl}}/productos/
 Content-Type: application/json
 
@@ -134,20 +134,23 @@ Content-Type: application/json
   "precio_base": 1200,
   "imagenes_url": ["http://img/latte"],
   "stock_cantidad": 15,
-  "disponible": true
+  "disponible": true,
+  "categoria_ids": [2],
+  "ingrediente_ids": [1, 2]
 }
 
-### 3.2 Crear Producto 2
+### 3.2 Crear Producto 2 (con multiples categorias)
 POST {{baseUrl}}/productos/
 Content-Type: application/json
 
 {
-  "nombre": "Cafe Negro",
-  "descripcion": "Producto simple",
+  "nombre": "Cafe Negro con Medialuna",
+  "descripcion": "Combo simple",
   "precio_base": 900,
   "imagenes_url": ["http://img/negro"],
   "stock_cantidad": 20,
-  "disponible": true
+  "disponible": true,
+  "categoria_ids": [2, 3]
 }
 
 ### 3.3 Listar Productos
@@ -156,155 +159,51 @@ GET {{baseUrl}}/productos/?offset=0&limit=10
 ### 3.4 Obtener Producto 1
 GET {{baseUrl}}/productos/1
 
-### 3.5 Actualizar Producto 1
+### 3.5 Actualizar Producto 1 (cambiar relaciones)
 PATCH {{baseUrl}}/productos/1
 Content-Type: application/json
 
 {
   "precio_base": 1350,
-  "stock_cantidad": 12
+  "stock_cantidad": 12,
+  "categoria_ids": [1, 2],
+  "ingrediente_ids": [2]
 }
 
-
-### ==========================================
-### 4. PRODUCTO-CATEGORIAS
-### Crear relaciones, listar y actualizar principal
-### ==========================================
-
-### 4.1 Relacionar Producto 1 con Categoria 2 como principal
-POST {{baseUrl}}/producto-categorias/
-Content-Type: application/json
-
-{
-  "producto_id": 1,
-  "categoria_id": 2,
-  "es_principal": true
-}
-
-### 4.2 Relacionar Producto 1 con Categoria 3
-POST {{baseUrl}}/producto-categorias/
-Content-Type: application/json
-
-{
-  "producto_id": 1,
-  "categoria_id": 3,
-  "es_principal": false
-}
-
-### 4.3 Ver Categorias del Producto 1
-GET {{baseUrl}}/producto-categorias/producto/1
-
-### 4.4 Ver Productos de la Categoria 3
-GET {{baseUrl}}/producto-categorias/categoria/3
-
-### 4.5 Pasar Categoria 3 a principal
-PATCH {{baseUrl}}/producto-categorias/producto/1/categoria/3
-Content-Type: application/json
-
-{
-  "es_principal": true
-}
-
-### 4.6 Ver Productos por Categoria 3
+### 3.6 Ver Productos por Categoria 3
 GET {{baseUrl}}/productos/categoria/3?offset=0&limit=10
 
-### Error 2: Relacion duplicada
-POST {{baseUrl}}/producto-categorias/
+### Error 2: Crear producto sin categoria (debe fallar)
+POST {{baseUrl}}/productos/
 Content-Type: application/json
 
 {
-  "producto_id": 1,
-  "categoria_id": 2,
-  "es_principal": false
+  "nombre": "Invalido",
+  "precio_base": 100,
+  "categoria_ids": []
 }
-
 
 ### ==========================================
-### 5. PRODUCTO-INGREDIENTES
-### Crear relaciones, listar y actualizar
+### 4. LIMPIEZA
 ### ==========================================
 
-### 5.1 Relacionar Producto 1 con Ingrediente 1
-POST {{baseUrl}}/producto-ingredientes/
-Content-Type: application/json
-
-{
-  "producto_id": 1,
-  "ingrediente_id": 1,
-  "es_removible": false
-}
-
-### 5.2 Relacionar Producto 1 con Ingrediente 2
-POST {{baseUrl}}/producto-ingredientes/
-Content-Type: application/json
-
-{
-  "producto_id": 1,
-  "ingrediente_id": 2,
-  "es_removible": true
-}
-
-### 5.3 Ver Ingredientes del Producto 1
-GET {{baseUrl}}/producto-ingredientes/producto/1
-
-### 5.4 Ver Productos del Ingrediente 1
-GET {{baseUrl}}/producto-ingredientes/ingrediente/1
-
-### 5.5 Actualizar Relacion Producto 1 - Ingrediente 1
-PATCH {{baseUrl}}/producto-ingredientes/producto/1/ingrediente/1
-Content-Type: application/json
-
-{
-  "es_removible": true
-}
-
-### 5.6 Ver Producto 1 final
-GET {{baseUrl}}/productos/1
-
-### Error 3: Relacion con ingrediente inexistente
-POST {{baseUrl}}/producto-ingredientes/
-Content-Type: application/json
-
-{
-  "producto_id": 1,
-  "ingrediente_id": 999,
-  "es_removible": false
-}
-
-
-### ==========================================
-### 6. LIMPIEZA
-### ==========================================
-
-### 6.1 Eliminar Relacion Producto 1 - Ingrediente 1
-DELETE {{baseUrl}}/producto-ingredientes/producto/1/ingrediente/1
-
-### 6.2 Eliminar Relacion Producto 1 - Ingrediente 2
-DELETE {{baseUrl}}/producto-ingredientes/producto/1/ingrediente/2
-
-### 6.3 Eliminar Relacion Producto 1 - Categoria 3
-DELETE {{baseUrl}}/producto-categorias/producto/1/categoria/3
-
-### 6.4 Eliminar Relacion Producto 1 - Categoria 2
-DELETE {{baseUrl}}/producto-categorias/producto/1/categoria/2
-
-### 6.5 Eliminar Producto 2
+### 4.1 Eliminar Producto 2
 DELETE {{baseUrl}}/productos/2
 
-### 6.6 Eliminar Producto 1
+### 4.2 Eliminar Producto 1
 DELETE {{baseUrl}}/productos/1
 
-### 6.7 Eliminar Ingrediente 2
+### 4.3 Eliminar Ingrediente 2
 DELETE {{baseUrl}}/ingredientes/2
 
-### 6.8 Eliminar Ingrediente 1
+### 4.4 Eliminar Ingrediente 1
 DELETE {{baseUrl}}/ingredientes/1
 
-### 6.9 Eliminar Categoria 3
+### 4.5 Eliminar Categoria 3
 DELETE {{baseUrl}}/categorias/3
 
-### 6.10 Eliminar Categoria 2
+### 4.6 Eliminar Categoria 2
 DELETE {{baseUrl}}/categorias/2
 
-### 6.11 Eliminar Categoria 1
+### 4.7 Eliminar Categoria 1
 DELETE {{baseUrl}}/categorias/1

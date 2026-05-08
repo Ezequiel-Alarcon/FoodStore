@@ -34,7 +34,15 @@ class ProductoBase(SQLModel):
 
 
 class ProductoCreate(ProductoBase):
-    pass
+    categoria_ids: list[int] = Field(
+        ..., 
+        min_length=1, 
+        description="Lista de IDs de categorías a las que pertenece (obligatorio, mínimo 1)"
+    )
+    ingrediente_ids: Optional[list[int]] = Field(
+        default=None, 
+        description="Lista opcional de IDs de ingredientes"
+    )
 
 
 class ProductoUpdate(SQLModel):
@@ -50,6 +58,12 @@ class ProductoUpdate(SQLModel):
         default=None, description="Cantidad en stock", ge=0)
     disponible: Optional[bool] = Field(
         default=None, description="Indica si el producto está disponible")
+    categoria_ids: Optional[list[int]] = Field(
+        default=None, min_length=1, description="Lista opcional de IDs de categorías para actualizar"
+    )
+    ingrediente_ids: Optional[list[int]] = Field(
+        default=None, description="Lista opcional de IDs de ingredientes para actualizar"
+    )
 
 # ─── Response schemas ────────────────────────────────────────────────────────────────────
 
