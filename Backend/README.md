@@ -45,7 +45,3 @@ Demostrar el funcionamiento de una aplicación Fullstack (FastAPI + React) que i
 
 - **Link:** Subir el video a YouTube (como oculto/unlisted) o Drive (con permisos de lectura).
 - **Código:** Adjuntar link al repositorio de GitHub/GitLab con el README.md configurado y el archivo requirements.txt incluido.
-
-
-
-python -m unittest tests/test_backend_unittest.py
